@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>this is what falling in love feels like — beast (fake EQ)</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #000;
+    --white: #ffffff;
+    --muted: rgba(255,255,255,0.06);
+    --glass: rgba(255,255,255,0.03);
+    --container-w: 820px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);font-family:Arial, Helvetica, sans-serif;color:var(--white);-webkit-font-smoothing:antialiased}
+  .stage{position:relative;width:100%;height:100vh;overflow:hidden}
+
+  .star {
+    position:absolute;
+    border-radius:50%;
+    background: #fff;
+    opacity: 0.85;
+    filter: blur(.2px);
+    will-change:transform,opacity;
+    z-index:2;
+  }
+  @keyframes starFloat {
+    from { transform: translateY(20vh) }
+    to   { transform: translateY(-120vh) }
+  }
+
+  .shoot {
+    position:absolute;
+    height:2px;
+    background: linear-gradient(90deg, rgba(255,255,255,1), rgba(255,255,255,0));
+    filter: blur(.6px);
+    will-change:transform,opacity;
+    z-index:6;
+  }
+
+  .particle {
+    position:absolute;
+    border-radius:50%;
+    background: rgba(255,255,255,0.04);
+    filter: blur(.6px);
+    pointer-events:none;
+    z-index:5;
+  }
+
+  .butterfly {
+    position:absolute;
+    width:34px; height:34px;
+    background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Butterfly_icon.svg/1024px-Butterfly_icon.svg.png');
+    background-size:contain;
+    background-repeat:no-repeat;
+    opacity:0.98;
+    pointer-events:none;
+    z-index:20;
+    will-change:transform,opacity;
+  }
+
+  @keyframes flutter1 {
+    0% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+    30% { transform: translateY(-20px) translateX(18px) rotate(18deg) scale(1.04); }
+    60% { transform: translateY(0) translateX(36px) rotate(6deg) scale(0.98); }
+    100% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+  }
+  @keyframes flutter2 {
+    0% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+    25% { transform: translateY(-14px) translateX(-22px) rotate(-20deg) scale(1.05); }
+    60% { transform: translateY(0) translateX(-44px) rotate(-8deg) scale(0.97); }
+    100% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+  }
+
+  #musicPlayer{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:min(var(--container-w),92%);
+    max-width:var(--container-w);
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    border-radius:16px;
+    padding:14px 18px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    z-index:1000;
+    box-shadow: 0 12px 40px rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.03);
+    backdrop-filter: blur(6px);
+  }
+
+  #albumArt{
+    width:110px;height:110px;border-radius:12px;background-image:url('your_picture.jpg');background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 16px 40px rgba(255,255,255,0.03)
+  }
+  #albumArt.pulse { animation: artPulse 2200ms ease-in-out infinite; }
+  @keyframes artPulse { 0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)} }
+
+  .meta { display:flex;flex-direction:column;gap:6px;min-width:0 }
+  .title-wrap { display:flex;align-items:center;gap:8px }
+  #title{
+    font-family: "Playfair Display", "Times New Roman", serif;
+    font-size:20px;
+    font-weight:700;
+    margin:0;
+    color:var(--white);
+    white-space:normal;
+    overflow:visible;
+    padding:8px 12px;
+    border-radius:10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 8px 24px rgba(255,255,255,0.04), 0 0 2px rgba(255,255,255,0.06) inset;
+  }
+  .sub { font-size:12px;color:rgba(255,255,255,0.68) }
+
+  #playButton{ margin-left:auto;background:none;border:0;padding:6px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .14s,transform .12s }
+  #playButton:hover{ background: rgba(255,255,255,0.03); transform:translateY(-3px) }
+  #playButton svg{ width:44px;height:44px; fill:var(--white) }
+
+  #lyricsContainer{
+    position:absolute;
+    left:50%;
+    top:9%;
+    transform:translateX(-50%);
+    width:72%;
+    max-width:1100px;
+    min-width:320px;
+    font-family:"Times New Roman", Times, serif;
+    font-size:3.0vh;
+    line-height:1.55;
+    color:var(--white);
+    text-align:left;
+    display:none;
+    z-index:950;
+    padding:8px 12px;
+    pointer-events:none;
+  }
+
+  .line {
+    margin-bottom:12px;
+    word-wrap:break-word;
+    max-width:100%;
+  }
+
+  .typing-cursor { display:inline-block; width:1px; background:var(--white); margin-left:6px; animation:blink 1s steps(1) infinite; vertical-align:baseline }
+  @keyframes blink { 50%{ opacity:0 } }
+
+  .equalizer {
+    position:absolute;
+    left:50%;
+    bottom:6%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:8px;
+    align-items:end;
+    z-index:960;
+    opacity:0;
+    transition:opacity .22s;
+  }
+  .equalizer.show{ opacity:1 }
+  .bar{
+    width:8px;
+    height:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.55));
+    border-radius:4px;
+    transform-origin:bottom center;
+    transition:height 160ms ease;
+  }
+
+  .vignette{ position:absolute; inset:0; pointer-events:none; z-index:900; background: radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,0.02), rgba(0,0,0,0.6) 45%, rgba(0,0,0,0.95) 80%) }
+
+  @media (max-width:640px){
+    #musicPlayer{ width:92%; padding:12px }
+    #albumArt{ width:86px; height:86px }
+    #title{ font-size:16px }
+    #lyricsContainer{ width:86%; font-size:3.8vw }
+  }
+
+  .hidden{ display:none!important }
+  .center{ text-align:center }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage" role="application" aria-label="Falling in love scene">
+
+    <div class="vignette" aria-hidden="true"></div>
+    <div id="shootWrap" aria-hidden="true"></div>
+    <div id="particleLayer" aria-hidden="true"></div>
+    <div id="butterLayer" aria-hidden="true"></div>
+
+    <div id="musicPlayer" role="region" aria-label="Music player">
+      <div id="albumArt" aria-hidden="true"></div>
+      <div class="meta" role="group" aria-label="Track info">
+        <div class="title-wrap">
+          <div id="title">this is what falling in love feels like</div>
+        </div>
+        <div class="sub">JVKE (hoshixdd) <code></code> </div>
+      </div>
+      <button id="playButton" aria-pressed="false" aria-label="Play/Pause">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M16 12v40l36-20L16 12z"></path></svg>
+      </button>
+    </div>
+
+    <div id="lyricsContainer" aria-live="polite" aria-atomic="false"></div>
+
+    <div class="equalizer" id="equalizer">
+      <div class="bar" id="bar1"></div>
+      <div class="bar" id="bar2"></div>
+      <div class="bar" id="bar3"></div>
+      <div class="bar" id="bar4"></div>
+      <div class="bar" id="bar5"></div>
+      <div class="bar" id="bar6"></div>
+      <div class="bar" id="bar7"></div>
+    </div>
+
+    <audio id="music" preload="auto">
+      <source src="falling-in-love.mp3" type="audio/mpeg">
+      <source src="falling-in-love.ogg" type="audio/ogg">
+      Your browser does not support audio.
+    </audio>
+  </div>
+
+<script>
+const LYRICS = [
+  "I got a lot on my mind",
+  "Got some more on my plate",
+  "My baby got me looking forward",
+  "to the end of the day",
+  "What you say, you and me",
+  "Just forget about the past",
+  "Throw it in the trash?",
+  "What you say, you and me",
+  "Live the life we never had",
+  "like we're never going back? plspls:>",
+];
+
+const audio = document.getElementById('music');
+const playButton = document.getElementById('playButton');
+const player = document.getElementById('musicPlayer');
+const lyricsContainer = document.getElementById('lyricsContainer');
+const equalizer = document.getElementById('equalizer');
+const bars = Array.from(equalizer.querySelectorAll('.bar'));
+const stage = document.getElementById('stage');
+const particleLayer = document.getElementById('particleLayer');
+const butLayer = document.getElementById('butterLayer');
+const shootWrap = document.getElementById('shootWrap');
+const albumArt = document.getElementById('albumArt');
+
+let playing = false;
+let typingHandles = [];
+let eqHandle = null;
+let shootInterval = null;
+
+function rand(min, max){ return Math.random()*(max-min)+min; }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+function clearTyping(){ typingHandles.forEach(h=>clearTimeout(h)); typingHandles=[]; }
+
+function spawnStars(count=60){
+  for(let i=0;i<count;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.round(rand(1,3));
+    s.style.width = s.style.height = size + 'px';
+    s.style.left = rand(0,100) + 'vw';
+    s.style.top = rand(0,100) + 'vh';
+    s.style.opacity = rand(0.18,0.95);
+    s.style.animation = `starFloat ${rand(8,24)}s linear ${rand(-24,0)}s infinite`;
+    s.style.zIndex = 2;
+    stage.appendChild(s);
+  }
+}
+
+function spawnParticles(count=12){
+  for(let i=0;i<count;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    const size = Math.round(rand(3,9));
+    p.style.width = p.style.height = size + 'px';
+    p.style.left = rand(2,96) + '%';
+    p.style.top = rand(10,92) + '%';
+    p.style.opacity = rand(0.02,0.12);
+    p.style.zIndex = 5;
+    particleLayer.appendChild(p);
+    (function loop(el){
+      const dx = rand(-60,60);
+      const dy = rand(-20,20);
+      el.animate([
+        { transform:'translate(0,0)' },
+        { transform:`translate(${dx}px, ${dy}px)` },
+        { transform:'translate(0,0)' }
+      ], { duration: 8000 + rand(2000,14000), iterations: Infinity, easing:'ease-in-out' });
+    })(p);
+  }
+}
+
+function spawnShootingStar(){
+  const s = document.createElement('div');
+  s.className = 'shoot';
+  s.style.width = rand(100,260) + 'px';
+  s.style.left = rand(-20,100) + '%';
+  s.style.top = rand(6,40) + '%';
+  s.style.zIndex = 6;
+  shootWrap.appendChild(s);
+  s.animate([
+    { transform: `translateX(-110vw) rotate(${rand(-6,6)}deg)`, opacity: 0 },
+    { transform: `translateX(110vw) rotate(${rand(-6,6)}deg)`, opacity: 0.95 }
+  ], { duration: 900 + rand(400,1200), easing: 'cubic-bezier(.22,.9,.32,1)' });
+  setTimeout(()=>s.remove(), 1600 + rand(0,800));
+}
+
+function startShootingLoop(){
+  if(shootInterval) clearInterval(shootInterval);
+  shootInterval = setInterval(()=>{
+    if(Math.random() > 0.45) spawnShootingStar();
+    if(Math.random() > 0.9) spawnShootingStar();
+  }, 700 + rand(0,800));
+}
+
+function spawnButterflies(count=12){
+  for(let i=0;i<count;i++){
+    const b = document.createElement('div');
+    b.className = 'butterfly';
+    const top = rand(10,85), left = rand(2,94);
+    b.style.top = top + 'vh';
+    b.style.left = left + 'vw';
+    const anim = (i%2===0) ? 'flutter1' : 'flutter2';
+    const dur = (rand(4.4,9.2)).toFixed(2) + 's';
+    const float = (rand(6.4,14.2)).toFixed(2) + 's';
+    b.style.animation = `${anim} ${dur} linear ${rand(0,2)}s infinite`;
+    b.style.zIndex = 20;
+    butLayer.appendChild(b);
+    b.animate([
+      { transform: 'translateY(0) translateX(0) scale(1)' },
+      { transform: `translateY(${rand(-18,18)}px) translateX(${rand(-12,12)}px) scale(${rand(0.98,1.06)})` },
+      { transform: 'translateY(0) translateX(0) scale(1)' }
+    ], { duration: 7000 + rand(0,6000), iterations: Infinity, easing:'ease-in-out' });
+  }
+}
+
+function startFakeEqualizer(){
+  equalizer.classList.add('show');
+  eqHandle = setInterval(()=>{
+    bars.forEach((bar, i) => {
+      const base = 8 + i*6;
+      const variance = Math.round(Math.abs(Math.sin((Date.now()/330) + i)) * (24 + Math.random()*70));
+      const h = clamp(base + variance, 8, 200);
+      bar.style.height = h + 'px';
+    });
+  }, 160);
+}
+
+function stopFakeEqualizer(){
+  equalizer.classList.remove('show');
+  if(eqHandle) { clearInterval(eqHandle); eqHandle = null; }
+  bars.forEach((b,i)=> b.style.height = (8 + i*6) + 'px');
+}
+
+/* ====================================================
+   Typing effect from practice file
+   ==================================================== */
+function startTypingLyrics(){
+  clearTyping();
+  lyricsContainer.innerHTML = '';
+  lyricsContainer.style.display = 'block';
+
+  let lineIndex = 0;
+  let charIndex = 0;
+  let isNewLine = true;
+
+  function typeCharacter() {
+    if (lineIndex >= LYRICS.length) return;
+
+    if (charIndex === 0 && isNewLine) {
+      lyricsContainer.innerHTML += '<div class="line"></div>';
+      isNewLine = false;
+    }
+
+    const currentLine = LYRICS[lineIndex];
+    const lineElement = lyricsContainer.lastElementChild;
+
+    if (charIndex < currentLine.length) {
+      lineElement.innerHTML = currentLine.substring(0, charIndex + 1) + 
+        '<span class="typing-cursor"></span>';
+      charIndex++;
+
+      let delay;
+      if (lineIndex === 0) {
+        delay = 55;
+      } else if (lineIndex === 1 || lineIndex === 2) {
+        delay = 70;
+      } else {
+        delay = 90;
+      }
+
+      const currentChar = currentLine[charIndex];
+      if (/[.,!?]/.test(currentChar)) delay = 300;
+      if (currentChar === ' ') delay = 80;
+
+      typingHandles.push(setTimeout(typeCharacter, delay));
+    } else {
+      lineElement.innerHTML = currentLine;
+      lineIndex++;
+      charIndex = 0;
+      isNewLine = true;
+
+      let lineDelay;
+      if (lineIndex <= 3) {
+        lineDelay = 300;
+      } else {
+        lineDelay = 300;
+      }
+      typingHandles.push(setTimeout(typeCharacter, lineDelay));
+    }
+  }
+
+  typingHandles.push(setTimeout(typeCharacter, 1500));
+}
+
+playButton.addEventListener('click', async () => {
+  if(!playing){
+    try {
+      await audio.play();
+      playing = true;
+      playButton.classList.add('playing');
+      playButton.setAttribute('aria-pressed','true');
+
+      player.style.transition = 'opacity .28s linear, transform .28s ease';
+      player.style.opacity = '0';
+      setTimeout(()=> player.style.display = 'none', 320);
+
+      spawnButterflies(18);
+      startShootingLoop();
+      spawnParticles(10);
+      startFakeEqualizer();
+      startTypingLyrics();
+      albumArt.classList.add('pulse');
+
+    } catch(err){
+      console.error('Playback failed:', err);
+      alert('Playback failed. Click somewhere on the page and try again (browser policy).');
+    }
+  } else {
+    audio.pause();
+    playing = false;
+    playButton.classList.remove('playing');
+    playButton.setAttribute('aria-pressed','false');
+    player.style.display = 'flex';
+    setTimeout(()=> player.style.opacity = '1', 40);
+    stopFakeEqualizer();
+    clearTyping();
+    lyricsContainer.innerHTML = '';
+    lyricsContainer.style.display = 'none';
+    butLayer.innerHTML = '';
+    shootWrap.innerHTML = '';
+    particleLayer.innerHTML = '';
+    albumArt.classList.remove('pulse');
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'k' || e.key === 'K') { playButton.click(); }
+  if(e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    playButton.click();
+  }
+});
+
+audio.addEventListener('ended', () => {
+  playing = false;
+  playButton.classList.remove('playing');
+  playButton.setAttribute('aria-pressed','false');
+  player.style.display = 'flex';
+  setTimeout(()=> player.style.opacity = '1', 40);
+  stopFakeEqualizer();
+  butLayer.innerHTML = '';
+  shootWrap.innerHTML = '';
+  particleLayer.innerHTML = '';
+  lyricsContainer.innerHTML = '';
+  lyricsContainer.style.display = 'none';
+  albumArt.classList.remove('pulse');
+});
+
+function initScene(){
+  spawnStars(70);
+  spawnParticles(14);
+  spawnButterflies(6);
+  bars.forEach((b,i)=> b.style.height = (8 + i*6) + 'px');
+  equalizer.style.display = 'flex';
+  equalizer.classList.remove('show');
+}
+document.addEventListener('DOMContentLoaded', initScene);
+
+window.addEventListener('beforeunload', () => {
+  if(eqHandle) clearInterval(eqHandle);
+  if(shootInterval) clearInterval(shootInterval);
+  clearTyping();
+});
+</script>
+</body>
+</html>
